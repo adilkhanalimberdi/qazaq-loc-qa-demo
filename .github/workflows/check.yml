@@ -1,0 +1,103 @@
+name: check
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install
+        run: pip install -e ".[dev]"
+
+      - name: Lint
+        run: |
+          ruff check .
+          ruff format --check .
+
+      - name: Tests
+        run: pytest
+
+      - name: No organizer data in the repository
+        run: python scripts/check_no_data_leak.py
+
+      - name: locqa check on fixtures (offline)
+        run: |
+          set +e
+          locqa check --no-llm \
+            --source tests/fixtures/src_ru.arb \
+            --target tests/fixtures/tgt_kk.arb \
+            --glossary glossary/glossary.csv \
+            --out out/report.json --html out/report.html
+          code=$?
+          # Fixtures contain seeded issues, so 1 (findings present) is the expected result.
+          if [ "$code" -ne 1 ]; then echo "unexpected exit code $code"; exit 1; fi
+
+      - uses: actions/upload-artifact@v4
+        if: matrix.python-version == '3.12'
+        with:
+          name: locqa-fixtures-report
+          path: out/
+
+  # Runs the checks on every ARB file changed in a pull request. The source (template) file
+  # is the intl_<LOCQA_SOURCE_LANG>.arb next to the changed file; set the repository variable
+  # LOCQA_SOURCE_LANG to change it (default ru).
+  arb:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install
+        run: pip install -e .
+
+      - name: Check changed ARB files
+        env:
+          SOURCE_LANG: ${{ vars.LOCQA_SOURCE_LANG || 'ru' }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          mkdir -p out
+          changed=$(git diff --name-only --diff-filter=AM "$BASE" HEAD -- '*.arb' | grep -v '^tests/fixtures/' || true)
+          if [ -z "$changed" ]; then echo "No ARB changes"; exit 0; fi
+          status=0
+          for target in $changed; do
+            source="$(dirname "$target")/intl_${SOURCE_LANG}.arb"
+            [ "$target" = "$source" ] && continue
+            [ -f "$source" ] || { echo "skip $target: no $source"; continue; }
+            name=$(basename "$target" .arb)
+            glossary=""
+            [ -f glossary/glossary.csv ] && glossary="--glossary glossary/glossary.csv"
+            set +e
+            locqa check --no-llm --source "$source" --target "$target" $glossary \
+              --min-severity medium --out "out/$name.json" --html "out/$name.html"
+            code=$?
+            set -e
+            # 1 means findings: reported, not a failure. 2 means a broken file.
+            if [ "$code" -ge 2 ]; then status=1; fi
+          done
+          exit $status
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: locqa-arb-report
+          path: out/

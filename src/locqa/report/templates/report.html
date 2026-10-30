@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{TITLE}}</title>
+<style>
+:root {
+  --bg: #ffffff; --fg: #1d2330; --muted: #5f6b7a; --line: #e3e7ee; --panel: #f6f8fb;
+  --high: #c62828; --medium: #b26a00; --low: #3b6ea8; --ok: #2e7d32; --accent: #3355cc;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14171c; --fg: #e6e9ef; --muted: #9aa5b4; --line: #2a2f38; --panel: #1b1f26;
+    --high: #ff6b6b; --medium: #f0a830; --low: #7fb0ff; --ok: #6fcf75; --accent: #8fa8ff;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg);
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+header, main { max-width: 1400px; margin: 0 auto; padding: 16px; }
+h1 { font-size: 20px; margin: 8px 0 4px; }
+.sub { color: var(--muted); font-size: 13px; }
+.cards { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+  padding: 8px 12px; min-width: 120px; }
+.card b { display: block; font-size: 20px; }
+.card span { color: var(--muted); font-size: 12px; }
+.filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+select, input { background: var(--bg); color: var(--fg); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 8px; font: inherit; }
+input[type=search] { flex: 1 1 220px; }
+.count { color: var(--muted); }
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; }
+table { border-collapse: collapse; width: 100%; min-width: 900px; }
+th, td { text-align: left; vertical-align: top; padding: 8px; border-bottom: 1px solid var(--line); }
+th { background: var(--panel); position: sticky; top: 0; font-size: 12px; color: var(--muted); }
+td.text { white-space: pre-wrap; word-break: break-word; max-width: 280px; }
+td.key { font-family: ui-monospace, Consolas, monospace; font-size: 12px; word-break: break-all; }
+.sev { display: inline-block; border-radius: 4px; padding: 1px 6px; font-size: 12px;
+  font-weight: 600; color: #fff; }
+.sev.high { background: var(--high); } .sev.medium { background: var(--medium); }
+.sev.low { background: var(--low); }
+.type { font-size: 12px; white-space: nowrap; }
+.sugg { color: var(--ok); }
+.rev { font-size: 12px; color: var(--ok); }
+.ev { color: var(--muted); font-size: 13px; }
+.meta { margin-top: 24px; color: var(--muted); font-size: 12px; }
+.meta li { margin: 2px 0; }
+</style>
+</head>
+<body>
+<header>
+  <h1 id="title"></h1>
+  <div class="sub" id="subtitle"></div>
+  <div class="cards" id="cards"></div>
+  <div class="filters">
+    <select id="f-type"><option value="">Все типы</option></select>
+    <select id="f-sev">
+      <option value="">Любая важность</option>
+      <option value="high">high</option><option value="medium">medium и выше</option>
+      <option value="low">low и выше</option>
+    </select>
+    <select id="f-rev">
+      <option value="">Любой статус</option>
+      <option value="yes">Проверено человеком</option><option value="no">Не проверено</option>
+      <option value="sugg">Есть предложение</option>
+    </select>
+    <input type="search" id="f-q" placeholder="Поиск по ключу, тексту, evidence">
+    <span class="count" id="count"></span>
+  </div>
+</header>
+<main>
+  <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th>Важность</th><th>Тип</th><th>Ключ</th><th>Исходник</th><th>Перевод</th>
+        <th>Предложение</th><th>Evidence</th><th>Увер.</th>
+      </tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+  <ul class="meta" id="meta"></ul>
+</main>
+<script id="report-data" type="application/json">{{DATA}}</script>
+<script>
+(function () {
+  var data = JSON.parse(document.getElementById("report-data").textContent);
+  var findings = data.findings, meta = data.meta;
+  var rank = { high: 2, medium: 1, low: 0 };
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text !== undefined && text !== null) e.textContent = text;
+    return e;
+  }
+  document.getElementById("title").textContent = document.title;
+  if (meta) {
+    document.getElementById("subtitle").textContent =
+      meta.source_file + " (" + meta.source_lang + ") \u2192 " + meta.target_file +
+      " (" + meta.target_lang + "), " + meta.generated_at + ", locqa " + meta.tool_version;
+  }
+  var counts = {}, sev = { high: 0, medium: 0, low: 0 }, reviewed = 0;
+  findings.forEach(function (f) {
+    counts[f.issue_type] = (counts[f.issue_type] || 0) + 1;
+    sev[f.severity]++;
+    if (f.reviewed_by_human) reviewed++;
+  });
+  var cards = document.getElementById("cards");
+  function card(value, label) {
+    var c = el("div", "card"); c.appendChild(el("b", null, value)); c.appendChild(el("span", null, label));
+    cards.appendChild(c);
+  }
+  card(findings.length, "находок");
+  card(sev.high, "high"); card(sev.medium, "medium"); card(sev.low, "low");
+  card(reviewed, "проверено человеком");
+  if (meta && meta.llm) {
+    card("$" + Number(meta.llm.cost_usd || 0).toFixed(4), "стоимость LLM (" + (meta.llm.model || "") + ")");
+  }
+  var typeSel = document.getElementById("f-type");
+  Object.keys(counts).sort().forEach(function (t) {
+    var o = el("option", null, t + " (" + counts[t] + ")"); o.value = t; typeSel.appendChild(o);
+  });
+  var tbody = document.getElementById("rows");
+  function render() {
+    var t = typeSel.value, s = document.getElementById("f-sev").value;
+    var r = document.getElementById("f-rev").value;
+    var q = document.getElementById("f-q").value.trim().toLowerCase();
+    tbody.textContent = "";
+    var shown = 0;
+    findings.forEach(function (f) {
+      if (t && f.issue_type !== t) return;
+      if (s && rank[f.severity] < rank[s]) return;
+      if (r === "yes" && !f.reviewed_by_human) return;
+      if (r === "no" && f.reviewed_by_human) return;
+      if (r === "sugg" && !f.suggestion) return;
+      if (q && [f.key, f.source, f.target, f.suggestion || "", f.evidence].join("\n").toLowerCase().indexOf(q) < 0) return;
+      shown++;
+      if (shown > 2000) return;
+      var tr = el("tr");
+      var tdSev = el("td"); tdSev.appendChild(el("span", "sev " + f.severity, f.severity)); tr.appendChild(tdSev);
+      tr.appendChild(el("td", "type", f.issue_type));
+      tr.appendChild(el("td", "key", f.key));
+      tr.appendChild(el("td", "text", f.source));
+      tr.appendChild(el("td", "text", f.target));
+      var tdS = el("td", "text sugg", f.suggestion || "");
+      if (f.reviewed_by_human) tdS.appendChild(el("div", "rev", "\u2713 проверено человеком"));
+      tr.appendChild(tdS);
+      tr.appendChild(el("td", "text ev", f.evidence));
+      tr.appendChild(el("td", null, Number(f.confidence).toFixed(2)));
+      tbody.appendChild(tr);
+    });
+    document.getElementById("count").textContent =
+      "показано " + Math.min(shown, 2000) + " из " + shown + (shown > 2000 ? " (уточните фильтр)" : "");
+  }
+  ["f-type", "f-sev", "f-rev"].forEach(function (id) {
+    document.getElementById(id).addEventListener("change", render);
+  });
+  document.getElementById("f-q").addEventListener("input", render);
+  render();
+  var metaList = document.getElementById("meta");
+  if (meta) {
+    (meta.warnings || []).forEach(function (w) { metaList.appendChild(el("li", null, "\u26a0 " + w)); });
+    metaList.appendChild(el("li", null, "Проверки: " + meta.checks_run.join(", ")));
+    if (meta.llm) metaList.appendChild(el("li", null, "LLM: " + JSON.stringify(meta.llm)));
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+# Organizer data: never commit (see docs/PLAN.md, data rules)
+data/
+docs/handout/
+Qazaq Loc QA план и документация.md
+._*
+
+# Outputs and caches
+out/
+.cache/
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/

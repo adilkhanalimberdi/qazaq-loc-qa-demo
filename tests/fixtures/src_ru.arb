@@ -1,0 +1,39 @@
+{
+  "@@locale": "ru",
+  "appTitle": "Тестовое приложение",
+  "okButton": "ОК",
+  "@@comment": "MENU",
+  "menuPlay": "Играть",
+  "menuSettings": "Настройки",
+  "greeting": "Привет, {name}!",
+  "@greeting": {
+    "description": "Приветствие на главном экране",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "coinsCount": "У вас {count} монет",
+  "@@comment": "SHOP",
+  "shopBuy": "Купить",
+  "shopBrand": "Super Shop",
+  "shopPrice": "1 000",
+  "shopNote": "Цена: <g>{price}</g>\nСкидка: {discount}%",
+  "currencyIcon": "\ue000",
+  "quoteLine": "Нажмите \"Купить\"",
+  "@@comment": "PROFILE",
+  "profileTitle": "Профиль",
+  "profileLevel": "Уровень {level} из {max}",
+  "missingInTarget": "Эта строка не переведена",
+  "emptyInTarget": "Пустой перевод",
+  "itemsCount": "{count, plural, one{{count} предмет} few{{count} предмета} many{{count} предметов} other{{count} предмета}}",
+  "giftTo": "Отправить подарок игроку {name}",
+  "daysLeft": "{days, plural, one{Остался {days} день} few{Осталось {days} дня} many{Осталось {days} дней} other{Осталось {days} дня}}",
+  "saveSettings": "Сохранить настройки",
+  "giftReceived": "Подарок в сундуке",
+  "rentButton": "Аренда",
+  "copiedSentence": "Добро пожаловать в игру",
+  "dupKey": "Дубль",
+  "dupKey": "Дубль"
+}

@@ -1,0 +1,38 @@
+{
+  "@@locale": "kk",
+  "appTitle": "Сынақ қосымшасы",
+  "okButton": "ОК",
+  "@@comment": "MENU",
+  "menuPlay": "Ойнау",
+   "menuSettings": "Баптаулар",
+  "greeting": "Сәлем, {nam}!",
+  "@greeting": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "coinsCount": "Сізде {count} тиын бар",
+  "@@comment": "SHOP",
+  "shopBuy": "Сатып алу",
+  "shopBrand": "Super Shop",
+  "shopPrice": "1 000",
+  "shopNote": "Бағасы: {price}\nЖеңілдік: {discount}%",
+  "currencyIcon": "\ue000",
+  "quoteLine": "\"Сатып алу\" түймесін басыңыз",
+  "@@comment": "PROFILE",
+   "profileTitle": "Профиль",
+  "profileLevel": "Деңгей {level} / {max}",
+  "emptyInTarget": "",
+  "itemsCount": "{count, plural, other{{count} зат}}",
+  "giftTo": "{name}-ға сыйлық жіберу",
+  "daysLeft": "{days, plural, one{{days} күн қалды}}",
+  "saveSettings": "Sozlamalarni saqlash",
+  "giftReceived": "Сыйлык сандыққа түсті",
+  "rentButton": "Жалға алу үшін осы жерді басыңыз",
+  "copiedSentence": "Добро пожаловать в игру",
+  "dupKey": "Көшірме",
+  "dupKey": "Қайталау",
+  "extraKey": "Артық кілт"
+}
